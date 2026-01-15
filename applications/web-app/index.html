@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TP Docker Swarm - Application Web</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 800px;
+            width: 90%;
+        }
+        
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .info-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .info-card h3 {
+            margin-bottom: 0.5rem;
+            color: #ffeb3b;
+        }
+        
+        .info-card p {
+            opacity: 0.9;
+        }
+        
+        .api-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        
+        .button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .button.secondary {
+            background: #2196F3;
+        }
+        
+        .button.secondary:hover {
+            background: #1976D2;
+        }
+        
+        .status {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        .node-info {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            text-align: left;
+        }
+        
+        .footer {
+            margin-top: 2rem;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🐳</div>
+        <h1>Docker Swarm TP</h1>
+        <p class="subtitle">Application Web Multi-Services</p>
+        
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>🚀 Statut</h3>
+                <p id="status">Service actif</p>
+            </div>
+            <div class="info-card">
+                <h3>📊 Nœud</h3>
+                <p id="node-info">Chargement...</p>
+            </div>
+            <div class="info-card">
+                <h3>⏰ Heure</h3>
+                <p id="time">--:--:--</p>
+            </div>
+            <div class="info-card">
+                <h3>🔄 Requêtes</h3>
+                <p id="request-count">0</p>
+            </div>
+        </div>
+        
+        <div class="api-section">
+            <h3>🔧 API Tests</h3>
+            <button class="button" onclick="testAPI('/api/health')">Test Santé</button>
+            <button class="button secondary" onclick="testAPI('/api/info')">Info Système</button>
+            <button class="button" onclick="testAPI('/api/nodes')">Nœuds Swarm</button>
+            <button class="button secondary" onclick="loadTest()">Test de Charge</button>
+            
+            <div class="status" id="api-response">
+                Cliquez sur un bouton pour tester l'API
+            </div>
+        </div>
+        
+        <div class="node-info">
+            <strong>Informations du conteneur:</strong>
+            <div id="container-info">Chargement...</div>
+        </div>
+        
+        <div class="footer">
+            TP Docker Swarm - Master 2 Migration Cloud<br>
+            Répartition automatique des charges et haute disponibilité
+        </div>
+    </div>
+
+    <script>
+        let requestCount = 0;
+        
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('time').textContent = now.toLocaleTimeString();
+        }
+        
+        function updateRequestCount() {
+            requestCount++;
+            document.getElementById('request-count').textContent = requestCount;
+        }
+        
+        async function testAPI(endpoint) {
+            updateRequestCount();
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.innerHTML = '⏳ Test en cours...';
+            
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                responseDiv.innerHTML = `
+                    <strong>✅ ${endpoint}</strong><br>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <strong>❌ Erreur ${endpoint}</strong><br>
+                    ${error.message}
+                `;
+            }
+        }
+        
+        async function loadTest() {
+            updateRequestCount();
+            const responseDiv = document.getElementById('api-response');
+            responseDiv.innerHTML = '🔄 Test de charge en cours...';
+            
+            const promises = [];
+            for (let i = 0; i < 10; i++) {
+                promises.push(fetch('/api/health'));
+            }
+            
+            try {
+                const results = await Promise.all(promises);
+                const successCount = results.filter(r => r.ok).length;
+                responseDiv.innerHTML = `
+                    <strong>📊 Test de charge terminé</strong><br>
+                    Requêtes envoyées: 10<br>
+                    Succès: ${successCount}/10<br>
+                    Taux de réussite: ${(successCount/10*100).toFixed(1)}%
+                `;
+            } catch (error) {
+                responseDiv.innerHTML = `
+                    <strong>❌ Erreur test de charge</strong><br>
+                    ${error.message}
+                `;
+            }
+        }
+        
+        async function loadNodeInfo() {
+            try {
+                const response = await fetch('/api/info');
+                const data = await response.json();
+                document.getElementById('node-info').textContent = data.hostname || 'Non disponible';
+                document.getElementById('container-info').innerHTML = `
+                    Hostname: ${data.hostname || 'N/A'}<br>
+                    IP: ${data.ip || 'N/A'}<br>
+                    Service: ${data.service || 'web-app'}<br>
+                    Version: ${data.version || '1.0.0'}
+                `;
+            } catch (error) {
+                document.getElementById('node-info').textContent = 'Erreur de connexion';
+                document.getElementById('container-info').textContent = 'Impossible de charger les informations';
+            }
+        }
+        
+        // Démarrage
+        setInterval(updateTime, 1000);
+        updateTime();
+        loadNodeInfo();
+        
+        // Rafraîchir les infos toutes les 30 secondes
+        setInterval(loadNodeInfo, 30000);
+    </script>
+</body>
+</html>

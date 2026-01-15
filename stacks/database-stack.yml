@@ -1,0 +1,214 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: swarmdb
+      POSTGRES_USER: swarmuser
+      POSTGRES_PASSWORD: swarmpass123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - database-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.database == true  # Nœud dédié pour la base
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      update_config:
+        failure_action: rollback
+        order: stop-first
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+      labels:
+        - "service.name=postgres"
+        - "service.type=database"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swarmuser -d swarmdb"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass redispass123
+    volumes:
+      - redis-data:/data
+    networks:
+      - database-network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.cache == true  # Nœud dédié pour le cache
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+      labels:
+        - "service.name=redis"
+        - "service.type=cache"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8083:8080"
+    networks:
+      - database-network
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    depends_on:
+      - postgres
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.3'
+      labels:
+        - "service.name=adminer"
+        - "service.type=admin"
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    ports:
+      - "8084:8081"
+    networks:
+      - database-network
+    environment:
+      REDIS_HOSTS: "redis:redis:6379:0:redispass123"
+      HTTP_USER: admin
+      HTTP_PASSWORD: adminpass123
+    depends_on:
+      - redis
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.3'
+      labels:
+        - "service.name=redis-commander"
+        - "service.type=admin"
+
+  db-backup:
+    image: postgres:15-alpine
+    networks:
+      - database-network
+    volumes:
+      - postgres-backups:/backups
+    environment:
+      PGPASSWORD: swarmpass123
+    command: |
+      sh -c '
+        while true; do
+          echo "Creating backup at $$(date)"
+          pg_dump -h postgres -U swarmuser -d swarmdb > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+          echo "Backup completed"
+          sleep 3600  # Backup every hour
+        done
+      '
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.backup == true
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.2'
+      labels:
+        - "service.name=db-backup"
+        - "service.type=backup"
+
+networks:
+  database-network:
+    driver: overlay
+    attachable: true
+    labels:
+      - "network.name=database-network"
+      - "network.description=Network for database services"
+
+volumes:
+  postgres-data:
+    driver: local
+    labels:
+      - "volume.name=postgres-data"
+      - "volume.description=PostgreSQL persistent data"
+  
+  postgres-init:
+    driver: local
+    labels:
+      - "volume.name=postgres-init"
+      - "volume.description=PostgreSQL initialization scripts"
+  
+  redis-data:
+    driver: local
+    labels:
+      - "volume.name=redis-data"
+      - "volume.description=Redis persistent data"
+  
+  postgres-backups:
+    driver: local
+    labels:
+      - "volume.name=postgres-backups"
+      - "volume.description=PostgreSQL backups"
+
+configs:
+  postgres_config:
+    external: false
+    labels:
+      - "config.name=postgres"
+      - "config.description=PostgreSQL configuration"
+
+secrets:
+  postgres_password:
+    external: false
+    labels:
+      - "secret.name=postgres_password"
+      - "secret.description=PostgreSQL password"
