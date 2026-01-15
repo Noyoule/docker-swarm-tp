@@ -1,5 +1,14 @@
 # TP Docker Swarm - Migration Cloud
 
+# Membres du groupe 
+
+- AFOMALE Komi David Frank
+- NOYOULIWA Essowaza Victoire
+- LIMDEYOU Médar Essossinam
+- NAPO Kossi M’PAKA
+- AKAKPO Remi Eli Kokou
+- BOTRE LARE Aboudou
+
 ## Objectifs du TP
 
 Ce TP vous permettra de découvrir et maîtriser Docker Swarm, la solution native d'orchestration de conteneurs de Docker. À la fin de ce TP, vous saurez :
