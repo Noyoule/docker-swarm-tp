@@ -190,18 +190,18 @@
         async function testAPI(endpoint) {
             updateRequestCount();
             const responseDiv = document.getElementById('api-response');
-            responseDiv.innerHTML = '⏳ Test en cours...';
+            responseDiv.innerHTML = 'Test en cours...';
             
             try {
                 const response = await fetch(endpoint);
                 const data = await response.json();
                 responseDiv.innerHTML = `
-                    <strong>✅ ${endpoint}</strong><br>
+                    <strong>${endpoint}</strong><br>
                     <pre>${JSON.stringify(data, null, 2)}</pre>
                 `;
             } catch (error) {
                 responseDiv.innerHTML = `
-                    <strong>❌ Erreur ${endpoint}</strong><br>
+                    <strong>Erreur ${endpoint}</strong><br>
                     ${error.message}
                 `;
             }
@@ -210,7 +210,7 @@
         async function loadTest() {
             updateRequestCount();
             const responseDiv = document.getElementById('api-response');
-            responseDiv.innerHTML = '🔄 Test de charge en cours...';
+            responseDiv.innerHTML = 'Test de charge en cours...';
             
             const promises = [];
             for (let i = 0; i < 10; i++) {
@@ -221,14 +221,14 @@
                 const results = await Promise.all(promises);
                 const successCount = results.filter(r => r.ok).length;
                 responseDiv.innerHTML = `
-                    <strong>📊 Test de charge terminé</strong><br>
+                    <strong>Test de charge terminé</strong><br>
                     Requêtes envoyées: 10<br>
                     Succès: ${successCount}/10<br>
                     Taux de réussite: ${(successCount/10*100).toFixed(1)}%
                 `;
             } catch (error) {
                 responseDiv.innerHTML = `
-                    <strong>❌ Erreur test de charge</strong><br>
+                    <strong>Erreur test de charge</strong><br>
                     ${error.message}
                 `;
             }

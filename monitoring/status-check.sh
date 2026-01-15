@@ -52,25 +52,25 @@ print_header() {
 
 print_success() {
     if [ "$JSON_OUTPUT" = false ]; then
-        echo -e "${GREEN}✅ $1${NC}"
+        echo -e "${GREEN} $1${NC}"
     fi
 }
 
 print_warning() {
     if [ "$JSON_OUTPUT" = false ]; then
-        echo -e "${YELLOW}⚠️  $1${NC}"
+        echo -e "${YELLOW}  $1${NC}"
     fi
 }
 
 print_error() {
     if [ "$JSON_OUTPUT" = false ]; then
-        echo -e "${RED}❌ $1${NC}"
+        echo -e "${RED} $1${NC}"
     fi
 }
 
 print_info() {
     if [ "$JSON_OUTPUT" = false ]; then
-        echo -e "${CYAN}ℹ️  $1${NC}"
+        echo -e "${CYAN}  $1${NC}"
     fi
 }
 
@@ -179,7 +179,7 @@ collect_info() {
         echo "  \"docker_version\": \"$(docker version --format '{{.Server.Version}}' 2>/dev/null || echo 'unknown')\""
         echo "}"
     else
-        print_header "📊 État du cluster Docker Swarm"
+        print_header "État du cluster Docker Swarm"
         echo
         print_info "Nœud actuel:"
         echo "  - ID: $node_id"
@@ -212,7 +212,7 @@ show_detailed_info() {
         return
     fi
     
-    print_header "🔍 Informations détaillées"
+    print_header "Informations détaillées"
     
     # Nœuds (seulement pour les managers)
     if docker node ls &>/dev/null; then
@@ -252,7 +252,7 @@ run_health_checks() {
         return
     fi
     
-    print_header "🏥 Vérifications de santé"
+    print_header "Vérifications de santé"
     
     # Vérifier la connectivité inter-nœuds (pour les managers)
     if docker node ls &>/dev/null; then

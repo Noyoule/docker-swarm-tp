@@ -22,10 +22,6 @@ Ce TP vous permettra de découvrir et maîtriser Docker Swarm, la solution nativ
 ```
 📁 docker-swarm-tp/
 ├── 📄 README.md                 # Ce fichier
-├── 📁 scripts/                  # Scripts d'automatisation
-│   ├── init-manager.sh          # Initialisation du manager
-│   ├── join-worker.sh           # Script pour rejoindre comme worker
-│   └── cleanup.sh               # Nettoyage du cluster
 ├── 📁 applications/             # Applications d'exemple
 │   ├── web-app/                 # Application web simple
 │   └── api/                     # API REST
@@ -42,7 +38,7 @@ Ce TP vous permettra de découvrir et maîtriser Docker Swarm, la solution nativ
 
 ### Étape 1: Préparation des machines
 
-#### Machine 1 (Manager) - 192.168.1.10
+#### Machine 1 (Manager)
 ```bash
 # Vérifier que Docker est installé et démarré
 sudo systemctl status docker
@@ -52,7 +48,7 @@ sudo systemctl start docker
 docker --version
 ```
 
-#### Machine 2 (Worker) - 192.168.1.11
+#### Machine 2 (Worker)
 ```bash
 # Même vérification que pour le manager
 sudo systemctl status docker
@@ -68,17 +64,10 @@ docker --version
 ```bash
 # Cloner ce TP
 git clone <url-du-repo>
-cd docker-swarm-tp
 
-# Utiliser le script d'initialisation
-chmod +x scripts/init-manager.sh
-./scripts/init-manager.sh
-```
-
-Ou manuellement :
 ```bash
-# Initialiser le swarm avec l'IP du manager
-docker swarm init --advertise-addr 192.168.1.10
+# Initialiser le swarm avec l'IP du manager par exemple 192.168.1.10
+docker swarm init --advertise-addr 192.168.1.10 
 
 # Récupérer le token pour les workers
 docker swarm join-token worker
@@ -100,12 +89,7 @@ scp -r scripts/ user@192.168.1.11:~/
 # Se connecter à la machine worker
 ssh user@192.168.1.11
 
-# Exécuter le script de join
-chmod +x scripts/join-worker.sh
-./scripts/join-worker.sh <TOKEN> 192.168.1.10:2377
-```
 
-Ou manuellement avec le token récupéré :
 ```bash
 docker swarm join --token <TOKEN> 192.168.1.10:2377
 ```
@@ -213,52 +197,6 @@ docker stack ps <STACK-NAME>
 docker stack rm <STACK-NAME>
 ```
 
-## 🎮 Exercices pratiques
-
-### Exercice 1: Test de haute disponibilité
-1. Déployez un service avec 3 répliques
-2. Arrêtez Docker sur le nœud worker
-3. Observez comment Swarm gère la situation
-4. Redémarrez Docker et observez la redistribution
-
-### Exercice 2: Rolling updates
-1. Déployez un service nginx
-2. Mettez-le à jour vers nginx:alpine
-3. Observez le processus de mise à jour progressive
-
-### Exercice 3: Contraintes de placement
-1. Étiquetez vos nœuds avec des rôles (web, db, etc.)
-2. Créez des services avec des contraintes de placement
-3. Testez le placement automatique
-
-## 🛠️ Dépannage
-
-### Problèmes courants
-
-#### Le worker ne peut pas rejoindre le swarm
-```bash
-# Vérifier la connectivité réseau
-ping 192.168.1.10
-
-# Vérifier que le port 2377 est ouvert
-telnet 192.168.1.10 2377
-
-# Regénérer le token si nécessaire
-docker swarm join-token worker
-```
-
-#### Services qui ne démarrent pas
-```bash
-# Vérifier les logs du service
-docker service logs <SERVICE-NAME>
-
-# Vérifier l'état des tâches
-docker service ps <SERVICE-NAME>
-
-# Vérifier les contraintes de ressources
-docker node inspect <NODE-ID>
-```
-
 ## Nettoyage
 
 Pour nettoyer complètement l'environnement :
@@ -277,31 +215,8 @@ docker swarm leave
 docker swarm leave --force
 ```
 
-Ou utilisez le script de nettoyage :
-```bash
-./scripts/cleanup.sh
-```
-
 ## Ressources complémentaires
 
 - [Documentation officielle Docker Swarm](https://docs.docker.com/engine/swarm/)
 - [Docker Swarm vs Kubernetes](https://docs.docker.com/get-started/orchestration/)
 - [Best practices pour Docker Swarm](https://docs.docker.com/engine/swarm/admin_guide/)
-
-## Checklist de validation
-
-- [ ] Cluster Swarm initialisé avec 1 manager
-- [ ] Au moins 1 worker rejoint le cluster
-- [ ] Service simple déployé et accessible
-- [ ] Stack multi-services déployée
-- [ ] Scaling manuel testé
-- [ ] Monitoring configuré
-- [ ] Tests de haute disponibilité réalisés
-
-## 👥 Contributeurs
-
-Ce TP a été créé pour le cours de Migration Cloud - Master 2.
-
----
-
-**Bonne découverte de Docker Swarm ! 🐳**
